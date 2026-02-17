@@ -666,6 +666,38 @@ void trafcountfunc(struct clientparam *param){
 	pthread_mutex_unlock(&tc_mutex);
 }
 
+// Apply bandlims policies from _limited user -- "~USER"
+int apply_limited_bandlim(struct clientparam * param){
+    dolog(param, "\"Quota exceeded, applying bandlim from ~USER\"");
+    // Apply policies from ~USER
+    if(param->username && conf.bandlimfunc && (conf.bandlimiter||conf.bandlimiterout)){
+        int username_orig_len = strlen(param->username) + 1; // + '\0'
+        unsigned char* username_limited = malloc(username_orig_len + 1); // +1 = '~'
+        if (username_limited != NULL) {
+            unsigned char* username_orig = param->username;
+            // Masquerading as ~USER
+            username_limited[0] = '~';
+            memcpy(username_limited + 1, param->username, username_orig_len);
+            param->username = username_limited;
+
+            // Applying bandlim policies
+            pthread_mutex_lock(&bandlim_mutex);
+            initbandlims(param);
+            pthread_mutex_unlock(&bandlim_mutex);
+
+            // Restoring original username
+            param->username = username_orig;
+            free(username_limited);
+            username_limited = NULL;
+            // No error return code (to prevent connection drop)
+            return 0;
+        }
+        username_limited = NULL;
+    }
+    // If something goes wrong, return the standard value (10)
+    return 10;
+}
+
 int alwaysauth(struct clientparam * param){
 	int res;
 	struct trafcount * tc;
@@ -697,7 +729,7 @@ int alwaysauth(struct clientparam * param){
 					}
 					if(tc->traflim64 <= tc->traf64) {
 					    pthread_mutex_unlock(&tc_mutex);
-					    return 10;
+					    return apply_limited_bandlim(param);
 					}
 					param->trafcountfunc = conf.trafcountfunc;
 					param->maxtrafin64 = tc->traflim64 - tc->traf64; 
@@ -712,7 +744,7 @@ int alwaysauth(struct clientparam * param){
 					}
 					if(tc->traflim64 <= tc->traf64) {
 					    pthread_mutex_unlock(&tc_mutex);
-					    return 10;
+					    return apply_limited_bandlim(param);
 					}
 					param->trafcountfunc = conf.trafcountfunc;
 					param->maxtrafout64 = tc->traflim64 - tc->traf64; 
