@@ -192,18 +192,19 @@ char * admin_stringtable[]={
 	"HTTP/1.0 401 Authentication Required\r\n"
 	"WWW-Authenticate: Basic realm=\"proxy\"\r\n"
 	"Connection: close\r\n"
-	"Content-type: text/html; charset=us-ascii\r\n"
+	"Content-type: text/html; charset=utf-8\r\n"
 	"\r\n"
-	"<html><head><title>401 Authentication Required</title></head>\r\n"
+	"<!DOCTYPE html><head><title>401 Authentication Required</title></head>\r\n"
 	"<body><h2>401 Authentication Required</h2><h3>Access to requested resource disallowed by administrator or you need valid username/password to use this resource</h3></body></html>\r\n",
 
 	"HTTP/1.0 200 OK\r\n"
 	"Connection: close\r\n"
 	"Expires: Thu, 01 Dec 1994 16:00:00 GMT\r\n"
 	"Cache-Control: no-cache\r\n"
-	"Content-type: text/html\r\n"
+	"Content-type: text/html; charset=utf-8\r\n"
 	"\r\n"
-	"<http><head><title>%s configuration page</title></head>\r\n"
+	"<!DOCTYPE html><head><title>%s configuration page</title><meta charset=\'utf-8\'></head>\r\n"
+	/* Table style */ "<style>table.tbl{font-family:Arial,Helvetica,sans-serif;border-collapse:collapse;width:100%}.tbl td,.tbl th{border:1px solid #ddd;padding:5px 4px}.tbl tr:nth-child(even){background-color:#f2f2f2}.tbl tr:hover{background-color:#ddd}.tbl th{padding-top:6px;padding-bottom:6px;text-align:left;background-color:#04AA6D;color:#fff}</style>\r\n"
 	"<table width=\'100%%\' border=\'0\'>\r\n"
 	"<tr><td width=\'150\' valign=\'top\'>\r\n"
 	"<h2>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
@@ -290,12 +291,12 @@ char * admin_stringtable[]={
 	"</td></tr></table></body></html>",
 
 	"<h3>Counters</h3>\r\n"
-	"<table border = \'1\'>\r\n"
-	"<tr align=\'center\'><td>Action</td><td>#/Desc</td><td>Active</td>"
-	"<td>Users</td><td>Source Address</td><td>Destination Address</td>"
-	"<td>Port</td>"
-	"<td>Limit</td><td>Units</td><td>Value</td>"
-	"<td>Reset</td><td>Updated</td><td>Position</td></tr>\r\n",
+	"<table class=\'tbl\'>\r\n"
+	"<tr align=\'center\'><th>Action</th><th>#/Desc</th><th>Active</th>"
+	"<th>Users</th><th>Source Address</th><th>Destination Address</th>"
+	"<th>Port</th>"
+	"<th>Limit</th><th>Units</th><th>Value</th>"
+	"<th>Reset</th><th>Updated</th><th>Position</th></tr>\r\n",
 
 	"</table>\r\n",
 
