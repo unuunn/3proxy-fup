@@ -1,4 +1,4 @@
-# 3proxy.full is fully functional 3proxy build based on busybox:glibc
+# 3proxy.full is fully functional distroless 3proxy build
 #
 # Example are for podman, for docker change 'podman' to 'docker'
 #
