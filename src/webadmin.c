@@ -188,6 +188,13 @@ static void printval(void *value, int type, int level, struct printparam* pp){
 	printstr(pp, "</item>");
 }
 
+static char * _admin_http_json_array =
+	"HTTP/1.0 200 OK\r\n"
+	"Connection: close\r\n"
+	"Cache-Control: no-cache\r\n"
+	"Content-type: application/json; charset=utf-8\r\n"
+	"\r\n"
+	"[\n";
 
 char * admin_stringtable[]={
 	"HTTP/1.0 401 Authentication Required\r\n"
@@ -448,6 +455,78 @@ void * adminchild(struct clientparam* param) {
  if(limited || param->redirected){
 	if(*req == 'C') req[1] = 0;
 	else *req = 0;
+ }
+ // JSON counters
+ if(*req == 'C' && req[1] == 'J') {
+	printstr(&pp, _admin_http_json_array);
+	struct trafcount *cp; 
+	int num = 0;
+	char buf_rule[1024];
+	for(cp = conf.trafcounter; cp; cp = cp->next, num++) {
+	 int inbuf = 0;
+	 	// general
+		inbuf += sprintf(buf+inbuf,
+			" { \"id\":%d, \"type\":\"%s\", \"counter_slot\":%d, \"comment\":\"%s\", ",
+			num,
+			cp->ace ? aceaction(cp->ace->action) : "-",
+			cp->number,
+			cp->comment ? cp->comment : "-"
+		);
+		// traf64
+		if(cp->ace && (cp->ace->action == NOCOUNTIN || cp->ace->action == NOCOUNTOUT || cp->ace->action == NOCOUNTALL)) {
+			inbuf += sprintf(buf+inbuf, "\"period\":\"-\", \"limit\":-1, \"value\":-1, " );
+		} else {
+			int i = inbuf;
+			inbuf += sprintf(buf+inbuf,	
+				"\"period\":\"%s\"\x1E \"limit\":%.2f\x1E \"value\":%.2f\x1E ",
+				rotations[cp->type],
+				cp->traflim64 / (1024.0 * 1024),
+				cp->traf64 / (1024.0 * 1024)
+			);
+			// float '.' locale independent hack
+			for (; i < inbuf; i++)
+				if (buf[i] == ',') buf[i] = '.';
+				else if (buf[i] == '\x1E') buf[i] = ',';
+		}
+		// rules
+		if (cp->ace) {
+			// users
+			if (cp->ace->users) printuserlist(buf_rule, sizeof(buf_rule), cp->ace->users, ", ");
+			inbuf += sprintf(buf+inbuf, "\"rule_users\":\"%s\", ", !cp->ace->users ? "*" : buf_rule);
+			// src
+			if (cp->ace->src) printiplist(buf_rule, sizeof(buf_rule), cp->ace->src, ", ");
+			inbuf += sprintf(buf+inbuf, "\"rule_src\":\"%s\", ", !cp->ace->src ? "*" : buf_rule);
+			// dst
+			if (cp->ace->dst) printiplist(buf_rule, sizeof(buf_rule), cp->ace->dst, ", ");
+			inbuf += sprintf(buf+inbuf, "\"rule_dst\":\"%s\", ", !cp->ace->dst ? "*" : buf_rule);
+			// ports
+			if (cp->ace->ports) printportlist(buf_rule, sizeof(buf_rule), cp->ace->ports, ", ");
+			inbuf += sprintf(buf+inbuf, "\"rule_ports\":\"%s\", ", !cp->ace->ports ? "*" : buf_rule);
+		} else {
+			inbuf += sprintf(buf+inbuf, "\"rule_users\":\"*\", \"rule_src\":\"*\", \"rule_dst\":\"*\", \"rule_ports\":\"*\", " );
+		}
+		// timestamps
+		struct tm *timeinfo;
+		char buf_time[24];
+
+		if (cp->cleared) {
+			timeinfo = localtime(&cp->cleared);
+			strftime(buf_time, 24, "%Y-%m-%dT%H:%M:%S", timeinfo);
+		}
+		inbuf += sprintf(buf+inbuf, "\"last_reset\":\"%s\", ", !cp->cleared ? "*" : buf_time);
+
+		if (cp->updated) {
+			timeinfo = localtime(&cp->updated);
+			strftime(buf_time, 24, "%Y-%m-%dT%H:%M:%S", timeinfo);
+		}
+		inbuf += sprintf(buf+inbuf, "\"last_update\":\"%s\", ", !cp->updated ? "*" : buf_time);
+ 		// disabled (final)
+ 		inbuf += sprintf(buf+inbuf, "\"disabled\":%s },\n", cp->disabled ? "true" : "false");
+ 		printstr(&pp, buf);
+	}
+	// finish
+ 	printstr(&pp, "]\n");
+ 	goto CLEANRET;
  }
  sprintf(buf, ok, conf.stringtable?(char *)conf.stringtable[2]:"3proxy", conf.stringtable?(char *)conf.stringtable[2]:"3[APA3A] tiny proxy", conf.stringtable?(char *)conf.stringtable[3]:"");
  if(*req != 'S') printstr(&pp, buf);
