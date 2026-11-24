@@ -13,7 +13,9 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef __ANDROID__
 #include <sys/timeb.h>
+#endif
 #include <fcntl.h>
 #include <time.h>
 #ifdef _WIN32
